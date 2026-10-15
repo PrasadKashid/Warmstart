@@ -1,0 +1,20 @@
+# Virtual Environment
+venv/
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Data artifacts & model weights
+models/
+*.faiss
+*.index
+
+# OS / Editor files
+.DS_Store
+.vscode/
+.idea/
