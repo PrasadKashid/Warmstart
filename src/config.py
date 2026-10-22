@@ -6,14 +6,14 @@ class Settings(BaseSettings):
     app_port: int = 8000
     debug: bool = True
 
-    # Google Gemini API
+    # Google Gemini Settings
     gemini_api_key: str
     embedding_model: str = "models/gemini-embedding-001"
     embedding_dim: int = 3072
-    llm_model: str = "gemini-2.5-flash"
+    llm_model: str = "gemma-4-26b-a4b-it"
 
     # Cache Settings
-    similarity_threshold: float = 0.88
+    similarity_threshold: float = 0.82
     redis_url: str = "redis://localhost:6379/0"
     qdrant_url: str = "http://localhost:6333"
     qdrant_collection: str = "warmstart_cache"
