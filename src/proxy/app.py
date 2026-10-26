@@ -1,7 +1,7 @@
-import hashlib
 import time
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from src.model.schemas import ChatRequest, ChatResponse
+from src.cache.exact_cache import ExactCache
 from src.cache.embedding import get_embedding
 from src.cache.llm_client import generate_response
 from src.cache.vector_store import VectorStore
@@ -10,18 +10,11 @@ from src.config import settings
 app = FastAPI(
     title="Warmstart Semantic Cache Gateway",
     version="0.1.0",
+    description="Multi-tier LLM Caching Gateway (L1 Redis + L2 Qdrant)",
 )
 
+l1_cache = ExactCache()
 vector_store = VectorStore()
-
-# Fast in-memory L1 cache: hash(prompt) -> response
-l1_cache: dict[str, str] = {}
-
-
-def get_l1_key(prompt: str) -> str:
-    """Normalize text (trim + lowercase) and hash with SHA-256."""
-    normalized = prompt.strip().lower()
-    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
 @app.get("/health")
@@ -35,66 +28,82 @@ def chat_completion(req: ChatRequest):
     selected_model = req.model or settings.llm_model
     target_threshold = req.threshold or settings.similarity_threshold
 
-    # --- TIER 1: L1 Exact Match (NO NETWORK CALL) ---
-    l1_key = get_l1_key(req.prompt)
-    if l1_key in l1_cache:
-        elapsed = (time.perf_counter() - start_time) * 1000
-        print(
-            f"[CACHE TIER 1 HIT - L1] Key: {l1_key[:8]}... | Latency: {elapsed:.2f} ms"
-        )
-        return ChatResponse(
-            response=l1_cache[l1_key],
-            cached=True,
-            similarity_score=1.0,
-            latency_ms=round(elapsed, 2),
-            model=selected_model,
-        )
+    # --- TIER 1: L1 Redis Exact Match ---
+    try:
+        cached_exact = l1_cache.get(req.prompt)
+        if cached_exact is not None:
+            elapsed = (time.perf_counter() - start_time) * 1000
+            print(f"[L1 REDIS HIT] Latency: {elapsed:.2f} ms")
+            return ChatResponse(
+                response=cached_exact,
+                cached=True,
+                similarity_score=1.0,
+                latency_ms=round(elapsed, 2),
+                model=selected_model,
+            )
+    except Exception as e:
+        print(f"[L1 WARNING] Redis lookup failed: {e}")
 
-    # --- TIER 2: L2 Semantic Match (Calls Embedding API + Qdrant) ---
-    print(f"[CACHE TIER 1 MISS] Generating embedding for L2 check...")
-    t_embed_start = time.perf_counter()
-    query_vector = get_embedding(req.prompt)
-    embed_duration = (time.perf_counter() - t_embed_start) * 1000
-    print(f"[EMBEDDING DURATION] Google API took: {embed_duration:.2f} ms")
-
-    cache_hit = vector_store.search_similar(
-        query_vector=query_vector,
-        threshold=target_threshold,
-    )
-
-    if cache_hit:
-        elapsed = (time.perf_counter() - start_time) * 1000
-        cached_text = cache_hit["payload"]["response"]
-
-        # Save to L1 so identical calls skip the embedding step next time
-        l1_cache[l1_key] = cached_text
-        print(
-            f"[CACHE TIER 2 HIT - L2] Similarity: {cache_hit['score']:.4f} | Total Latency: {elapsed:.2f} ms"
+    # --- TIER 2: L2 Qdrant Semantic Match ---
+    query_vector = None
+    try:
+        query_vector = get_embedding(req.prompt)
+        cache_hit = vector_store.search_similar(
+            query_vector=query_vector,
+            threshold=target_threshold,
         )
 
-        return ChatResponse(
-            response=cached_text,
-            cached=True,
-            similarity_score=round(cache_hit["score"], 4),
-            latency_ms=round(elapsed, 2),
-            model=selected_model,
-        )
+        if cache_hit:
+            elapsed = (time.perf_counter() - start_time) * 1000
+            cached_response = cache_hit["payload"]["response"]
 
-    # --- CACHE MISS: Upstream LLM ---
-    print(f"[CACHE MISS] Calling upstream LLM ({selected_model})...")
-    llm_output = generate_response(prompt=req.prompt, model=selected_model)
+            # Populate L1 Redis so repeat exact queries bypass embedding
+            try:
+                l1_cache.set(req.prompt, cached_response)
+            except Exception:
+                pass
 
-    # Save to both tiers
-    vector_store.store(
-        prompt=req.prompt,
-        vector=query_vector,
-        response=llm_output,
-        metadata={"model": selected_model},
-    )
-    l1_cache[l1_key] = llm_output
+            print(
+                f"[L2 QDRANT HIT] Similarity: {cache_hit['score']:.4f} | Latency: {elapsed:.2f} ms"
+            )
+            return ChatResponse(
+                response=cached_response,
+                cached=True,
+                similarity_score=round(cache_hit["score"], 4),
+                latency_ms=round(elapsed, 2),
+                model=selected_model,
+            )
+    except Exception as e:
+        print(f"[L2 WARNING] Semantic search failed: {e}")
+
+    # --- CACHE MISS: Upstream LLM Generation ---
+    print(f"[CACHE MISS] Calling upstream LLM: {selected_model}...")
+    try:
+        llm_output = generate_response(prompt=req.prompt, model=selected_model)
+    except Exception as e:
+        print(f"[LLM ERROR] Upstream generation failed: {e}")
+        raise HTTPException(status_code=502, detail=f"Upstream LLM error: {str(e)}")
+
+    # Persist results to both tiers
+    if query_vector:
+        try:
+            vector_store.store(
+                prompt=req.prompt,
+                vector=query_vector,
+                response=llm_output,
+                metadata={"model": selected_model},
+            )
+        except Exception as e:
+            print(f"[QDRANT WARNING] Failed to persist vector: {e}")
+
+    try:
+        l1_cache.set(req.prompt, llm_output)
+    except Exception as e:
+        print(f"[REDIS WARNING] Failed to persist L1 cache: {e}")
 
     elapsed = (time.perf_counter() - start_time) * 1000
     print(f"[CACHE STORED] Total Latency: {elapsed:.2f} ms")
+
     return ChatResponse(
         response=llm_output,
         cached=False,

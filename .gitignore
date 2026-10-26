@@ -21,3 +21,5 @@ models/
 /data/bin
 /storage
 /snapshots
+.qdrant-initialized
+dump.rdb

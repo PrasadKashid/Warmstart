@@ -1,0 +1,62 @@
+[
+  {
+    "id": "q1_base",
+    "prompt": "What is the capital of France?",
+    "category": "geography",
+    "expected_tier": "miss"
+  },
+  {
+    "id": "q1_exact",
+    "prompt": "  What is the CAPITAL of France?  ",
+    "category": "geography",
+    "expected_tier": "l1"
+  },
+  {
+    "id": "q1_semantic",
+    "prompt": "Which city serves as France's capital?",
+    "category": "geography",
+    "expected_tier": "l2"
+  },
+  {
+    "id": "q2_base",
+    "prompt": "How does photosynthesis work in plants?",
+    "category": "biology",
+    "expected_tier": "miss"
+  },
+  {
+    "id": "q2_semantic",
+    "prompt": "Explain the biological process of photosynthesis in green plants.",
+    "category": "biology",
+    "expected_tier": "l2"
+  },
+  {
+    "id": "q2_exact",
+    "prompt": "How does photosynthesis work in plants?",
+    "category": "biology",
+    "expected_tier": "l1"
+  },
+  {
+    "id": "q3_base",
+    "prompt": "What is the difference between TCP and UDP?",
+    "category": "networking",
+    "expected_tier": "miss"
+  },
+  {
+    "id": "q3_semantic",
+    "prompt": "Compare TCP vs UDP protocols in computer networks.",
+    "category": "networking",
+    "expected_tier": "l2"
+  },
+  {
+    "id": "q4_unrelated",
+    "prompt": "Who painted the Mona Lisa?",
+    "category": "art",
+    "expected_tier": "miss"
+  },
+  {
+    "id": "q5_unrelated",
+    "prompt": "How do airplanes generate lift?",
+    "category": "physics",
+    "expected_tier": "miss"
+  }
+]

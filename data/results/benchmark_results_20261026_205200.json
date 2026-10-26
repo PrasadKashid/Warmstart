@@ -1,0 +1,125 @@
+{
+  "timestamp": "20261026_205200",
+  "summary": {
+    "total_queries": 10,
+    "overall_hit_rate_pct": 50.0,
+    "l1_hits": 2,
+    "l2_hits": 3,
+    "misses": 5,
+    "avg_l1_latency_ms": 0.48,
+    "avg_l2_latency_ms": 5368.61,
+    "avg_miss_latency_ms": 39657.56
+  },
+  "details": [
+    {
+      "id": "q1_base",
+      "category": "geography",
+      "expected_tier": "miss",
+      "actual_tier": "miss",
+      "cached": false,
+      "similarity_score": null,
+      "latency_ms": 5341.43,
+      "prompt": "What is the capital of France?",
+      "response": "The capital of France is **Paris**...."
+    },
+    {
+      "id": "q1_exact",
+      "category": "geography",
+      "expected_tier": "l1",
+      "actual_tier": "l1",
+      "cached": true,
+      "similarity_score": 1.0,
+      "latency_ms": 0.63,
+      "prompt": "  What is the CAPITAL of France?  ",
+      "response": "The capital of France is **Paris**...."
+    },
+    {
+      "id": "q1_semantic",
+      "category": "geography",
+      "expected_tier": "l2",
+      "actual_tier": "l2",
+      "cached": true,
+      "similarity_score": 0.8227,
+      "latency_ms": 12699.79,
+      "prompt": "Which city serves as France's capital?",
+      "response": "The capital of France is **Paris**...."
+    },
+    {
+      "id": "q2_base",
+      "category": "biology",
+      "expected_tier": "miss",
+      "actual_tier": "miss",
+      "cached": false,
+      "similarity_score": null,
+      "latency_ms": 42190.28,
+      "prompt": "How does photosynthesis work in plants?",
+      "response": "At its simplest level, **photosynthesis** is the process by which plants use sun..."
+    },
+    {
+      "id": "q2_semantic",
+      "category": "biology",
+      "expected_tier": "l2",
+      "actual_tier": "l2",
+      "cached": true,
+      "similarity_score": 0.7803,
+      "latency_ms": 1830.66,
+      "prompt": "Explain the biological process of photosynthesis in green plants.",
+      "response": "At its simplest level, **photosynthesis** is the process by which plants use sun..."
+    },
+    {
+      "id": "q2_exact",
+      "category": "biology",
+      "expected_tier": "l1",
+      "actual_tier": "l1",
+      "cached": true,
+      "similarity_score": 1.0,
+      "latency_ms": 0.33,
+      "prompt": "How does photosynthesis work in plants?",
+      "response": "At its simplest level, **photosynthesis** is the process by which plants use sun..."
+    },
+    {
+      "id": "q3_base",
+      "category": "networking",
+      "expected_tier": "miss",
+      "actual_tier": "miss",
+      "cached": false,
+      "similarity_score": null,
+      "latency_ms": 41285.54,
+      "prompt": "What is the difference between TCP and UDP?",
+      "response": "The simplest way to understand the difference is through an analogy: **TCP is li..."
+    },
+    {
+      "id": "q3_semantic",
+      "category": "networking",
+      "expected_tier": "l2",
+      "actual_tier": "l2",
+      "cached": true,
+      "similarity_score": 0.8288,
+      "latency_ms": 1575.37,
+      "prompt": "Compare TCP vs UDP protocols in computer networks.",
+      "response": "The simplest way to understand the difference is through an analogy: **TCP is li..."
+    },
+    {
+      "id": "q4_unrelated",
+      "category": "art",
+      "expected_tier": "miss",
+      "actual_tier": "miss",
+      "cached": false,
+      "similarity_score": null,
+      "latency_ms": 69240.24,
+      "prompt": "Who painted the Mona Lisa?",
+      "response": "The Mona Lisa was painted by **Leonardo da Vinci**...."
+    },
+    {
+      "id": "q5_unrelated",
+      "category": "physics",
+      "expected_tier": "miss",
+      "actual_tier": "miss",
+      "cached": false,
+      "similarity_score": null,
+      "latency_ms": 40230.33,
+      "prompt": "How do airplanes generate lift?",
+      "response": "To understand how an airplane generates lift, you have to look at two different ..."
+    }
+  ]
+}
